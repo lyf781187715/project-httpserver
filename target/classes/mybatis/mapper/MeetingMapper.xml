@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.lyf.mapper.MeetingMapper">
+
+    <select id="queryMeetingList" resultType="Meeting">
+        select * from meeting
+    </select>
+
+    <select id="queryMeetingById" parameterType="int" resultType="Meeting">
+        select * from meeting where meetingId = #{meetingId}
+    </select>
+
+    <select id="queryMeeting"  resultType="Meeting">
+        select * from meeting where meetingId = #{meetingId} and pwd = #{pwd}
+    </select>
+
+    <insert id="addMeeting" parameterType="Meeting">
+        insert into meeting(meetingId,pwd,roomTitle,userName,roomDescription,userId,direct,imageUrl, status)
+        values(#{meetingId},#{pwd},#{roomTitle},#{userName},#{roomDescription},#{userId},#{direct},#{imageUrl}, #{status})
+    </insert>
+
+    <insert id="updateMeeting" parameterType="Meeting">
+        update meeting set pwd=#{pwd},roomTitle=#{roomTitle},roomDescription=#{roomDescription}
+        where meetingId = #{meetingId}
+    </insert>
+
+    <update id="updateMeetingStatus" parameterType="Meeting">
+        update meeting set status=#{status}
+        where meetingId = #{meetingId}
+    </update>
+
+    <delete id="deleteMeeting" parameterType="int">
+        delete from meeting where meetingId = #{meetingId}
+    </delete>
+</mapper>
