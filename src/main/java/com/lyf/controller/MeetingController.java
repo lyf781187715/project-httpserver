@@ -7,11 +7,13 @@ import com.lyf.pojo.User;
 import com.lyf.service.FileService;
 import com.lyf.service.MeetingServiceimpl;
 import com.lyf.service.UserServiceimpl;
+import com.lyf.utils.RabbitMqUtils;
+import com.rabbitmq.client.Channel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
+import com.rabbitmq.client.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +31,9 @@ public class MeetingController {
     @Autowired
     private UserServiceimpl userServiceimpl;
 
+    @Autowired
+    RabbitMqUtils rabbitMqUtils;
+
     @Value(value = "${socketserver.url}")
     private String socketurl;
 
@@ -41,6 +46,8 @@ public class MeetingController {
         Map<String, Object> map = new HashMap<String, Object>();
 
         User user = userServiceimpl.queryUserByName(meeting.getUserName());
+
+
         try{
             int meetingId = meetingServiceimpl.creatNewId();
             Meeting meeting1 = new Meeting(meetingId,
@@ -48,6 +55,10 @@ public class MeetingController {
                     meeting.getRoomDescription(),user.getUserId(),meeting.getDirect(), meeting.getImageUrl(), 1);
             // start meeting default set status to 1
             meetingServiceimpl.addMeeting(meeting1);
+
+            Connection connection = rabbitMqUtils.getConnection();
+            rabbitMqUtils.creatQueue(connection,meetingId+"");
+
 
             map.put("state",0);
             map.put("meetingId",meetingId);

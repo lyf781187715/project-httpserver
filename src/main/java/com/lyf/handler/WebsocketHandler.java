@@ -7,9 +7,14 @@ import com.lyf.pojo.Translate;
 import com.lyf.pojo.TranslateResp;
 import com.lyf.service.FileService;
 import com.lyf.service.MeetingServiceimpl;
+import com.lyf.service.RabbitmqService;
 import com.lyf.service.TranslateService;
+import com.lyf.utils.RabbitMqUtils;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -19,12 +24,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Component
 public class WebsocketHandler extends TextWebSocketHandler {
-    //储存分组信息 meetingId：用户 list
-    private static final Map<String, ArrayList<WebSocketSession>> userMap = new HashMap<>();
 
-    private static volatile Map<String,Boolean> userFlag = new HashMap<>();
+    //储存分组信息 meetingId：用户 list
+    //private  Map<String, ArrayList<WebSocketSession>> userMap = new HashMap<>();
+
+    private Map<String,Thread> threadMap = new ConcurrentHashMap<>();
 
     private static int log_id=0;
 
@@ -37,9 +45,11 @@ public class WebsocketHandler extends TextWebSocketHandler {
     @Autowired
     MeetingServiceimpl meetingServiceimpl;
 
+    @Autowired
+    RabbitMqUtils rabbitMqUtils;
+
     @Value(value = "${filepath}")
     private String filepath;
-
 
 
     //接受端信息，并发出
@@ -51,6 +61,14 @@ public class WebsocketHandler extends TextWebSocketHandler {
         System.out.println("收到用户"+userId+"发来的消息");
 
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
+
+        //rabbitMQ part
+        Connection connection = rabbitMqUtils.getConnection();
+        Channel channel = connection.createChannel();
+
+        channel.basicPublish("",meetingId,null,message.getPayload().getBytes());
+        //sendMessageToGroup(meetingId,message);
+
 
         //要在这里调用语音符文并转化为text发给meeting中所有成员。
 
@@ -87,6 +105,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         //    fileService.writeFile(meetingId,message.getPayload(),true,true);
         //}
 
+
         // deletes the last line if new line the is immediate incremental (too complicated)
         //File f = new File(filepath+"/"+meetingId+"_src");
         //if (f.exists() && !f.isDirectory()) { // doesn't read from first time
@@ -103,19 +122,19 @@ public class WebsocketHandler extends TextWebSocketHandler {
         //    }
         //}
 
-        String json = message.getPayload();
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, String> map = objectMapper.readValue(json, HashMap.class);
-        String text = map.get("text");
-        String type = map.get("type");
-        System.out.println(type+": " + text);
+//        String json = message.getPayload();
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        Map<String, String> map = objectMapper.readValue(json, HashMap.class);
+//        String text = map.get("text");
+//        String type = map.get("type");
+//        System.out.println(type+": " + text);
 
         // implement write message to file for now
-        if (type.equals("2")) { // end of a sentence
-            fileService.writeFile(meetingId, text, true, true);
-        }
+//        if (type.equals("2")) { // end of a sentence
+//            fileService.writeFile(meetingId, text, true, true);
+//        }
 
-        sendMessageToGroup(meetingId,new TextMessage(text));
+        //sendMessageToGroup(meetingId,new TextMessage(text));
     }
 
     //建立连接后处理，离线消息推送
@@ -123,20 +142,30 @@ public class WebsocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
         String meetingId = (String) session.getAttributes().get("meetingId");
-        Map uM = userMap;
+
         ArrayList<WebSocketSession> users;
-        if(userMap.containsKey(meetingId)){
-            users = userMap.get(meetingId);
-        }else {
-            users = new ArrayList<>();
+
+        if(!SessionManager.isContains(meetingId)){
+            RabbitmqService rabbitmqService = new RabbitmqService(meetingId);
+            Thread thread = new Thread(rabbitmqService);
+            threadMap.put(meetingId,thread);
+            thread.start();
         }
 
-        if(!userFlag.containsKey(meetingId)){
-            userFlag.put(meetingId,true);
-        }
-
-        users.add(session);
-        userMap.put(meetingId, users);
+        SessionManager.addSession(meetingId,session);
+//        if(userMap.containsKey(meetingId)){
+//            users = userMap.get(meetingId);
+//        }else {
+//            users = new ArrayList<>();
+//            RabbitmqService rabbitmqService = new RabbitmqService(meetingId);
+//            Thread thread = new Thread(rabbitmqService);
+//            threadMap.put(meetingId,thread);
+//            thread.start();
+//        }
+//
+//
+//        users.add(session);
+//        userMap.put(meetingId, users);
         session.sendMessage(new TextMessage(userId+"加入会议"+meetingId));
         System.out.println("sent enter msg");
     }
@@ -147,13 +176,14 @@ public class WebsocketHandler extends TextWebSocketHandler {
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         String userId = (String)session.getAttributes().get("userId");
         String meetingId = (String)session.getAttributes().get("meetingId");
-        Map uM = userMap;
+
 
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
         if (String.valueOf(meeting.getUserId()).equals(userId) ){
             System.out.println("speaker has left");
             // implement broadcast speaker has left message
-            ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+            //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+            ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
             for (WebSocketSession session1 : userList){
                 if (session1.isOpen()) {
                     System.out.println(session1.getUri());
@@ -163,12 +193,14 @@ public class WebsocketHandler extends TextWebSocketHandler {
         }
         System.out.println(userId+" has left "+meetingId);
 
-        ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+        ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
         userList.remove(session);
-        userMap.remove(meetingId); // remove the existing meeting
-        userMap.put(meetingId, userList); // update the userList in userMap
+        SessionManager.remove(meetingId); // remove the existing meeting
+        SessionManager.update(meetingId, userList); // update the userList in userMap
         if(userList.size()<=0){ // if no more users in meeting, remove the meeting
-            userMap.remove(meetingId);
+            SessionManager.remove(meetingId);
+            threadMap.get(meetingId).interrupt();
         }
     }
 
@@ -180,7 +212,8 @@ public class WebsocketHandler extends TextWebSocketHandler {
         }
         String userId = (String)session.getAttributes().get("userId");
         String meetingId = (String)session.getAttributes().get("meetingId");
-        ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+        ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
         // todo: check logic of userList being null
         if (userList != null) {
             userList.remove(session);
@@ -188,25 +221,26 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
     }
 
-
-    public void sendMessageToGroup(String meetingId,TextMessage message){
-        ArrayList<WebSocketSession> userList = userMap.get(meetingId);
-        if(userList!=null&&userList.size()>0){
-            for (WebSocketSession user:userList) {
-//                System.out.println(user.getAttributes().get("userName"));
-//                System.out.println(user.getAttributes().get("meetingId"));
-                if(user.isOpen()){
-                    try{
-                        user.sendMessage(message);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        System.out.println("给用户"+user.getAttributes().get("userId")+"发送失败");
-                    }
-
-                }
-            }
-        }
-
-
-    }
+//    public void sendMessageToGroup(String meetingId,TextMessage message){
+//        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
+//
+//        ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
+//        if(userList!=null&&userList.size()>0){
+//            for (WebSocketSession user:userList) {
+////                System.out.println(user.getAttributes().get("userName"));
+////                System.out.println(user.getAttributes().get("meetingId"));
+//                if(user.isOpen()){
+//                    try{
+//                        user.sendMessage(message);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        System.out.println("给用户"+user.getAttributes().get("userId")+"发送失败");
+//                    }
+//
+//                }
+//            }
+//        }
+//
+//
+//    }
 }

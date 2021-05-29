@@ -3,9 +3,11 @@ package com.lyf.pojo;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
-public class Translate {
+public class Translate implements Serializable {
     String log_id;
     int direct;
     int model_type;

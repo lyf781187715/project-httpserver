@@ -2,6 +2,7 @@ package com.lyf.config;
 
 import com.lyf.intercepter.MyHandshakeInterceptor;
 import com.lyf.handler.WebsocketHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -19,13 +20,14 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Resource
     private MyHandshakeInterceptor myHandshakeInterceptor;
 
+    @Autowired
+    private WebsocketHandler websocketHandler;
 
-    @Bean
-    public WebsocketHandler websocketHandler(){return new WebsocketHandler();}
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry webSocketHandlerRegistry) {
         webSocketHandlerRegistry
-                .addHandler(websocketHandler(),"/ws")
+                .addHandler(websocketHandler,"/ws")
                 .setAllowedOrigins("*")
                 .addInterceptors(myHandshakeInterceptor);
     }
