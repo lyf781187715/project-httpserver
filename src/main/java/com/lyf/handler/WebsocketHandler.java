@@ -12,6 +12,7 @@ import com.lyf.service.TranslateService;
 import com.lyf.utils.RabbitMqUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 
 @Component
 public class WebsocketHandler extends TextWebSocketHandler {
@@ -34,7 +36,6 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
     private Map<String,Thread> threadMap = new ConcurrentHashMap<>();
 
-    private static int log_id=0;
 
     @Autowired
     FileService fileService = new FileService();
@@ -63,47 +64,10 @@ public class WebsocketHandler extends TextWebSocketHandler {
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
 
         //rabbitMQ part
+
         Connection connection = rabbitMqUtils.getConnection();
         Channel channel = connection.createChannel();
-
         channel.basicPublish("",meetingId,null,message.getPayload().getBytes());
-        //sendMessageToGroup(meetingId,message);
-
-
-        //要在这里调用语音符文并转化为text发给meeting中所有成员。
-
-        //if(userFlag.get(meetingId)){
-        //    //写入并请求获得翻译
-        //    userFlag.put(meetingId,false);
-        //    fileService.writeFile(meetingId,message.getPayload(),true,true);
-
-        //    String extra_info = "";
-        //    String his = fileService.readFile(meetingId,false);
-
-        //    Translate translate = new Translate(String.valueOf(log_id),meeting.getDirect(),0,message.getPayload(),his,extra_info);
-        //    TranslateResp translateResp = translateService.sendPost(translate);
-        //    if(translateResp.getStatus()==0) {
-        //        log_id++;
-        //        if(translateResp.getTrans_act()==1){
-        //            fileService.writeFile(meetingId,translateResp.getTrans_res(),false,false);
-        //            JSONObject res = new JSONObject();
-        //            res.put("src",translateResp.getSrc());
-        //            res.put("his",translateResp.getTrans_res());
-        //            sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
-        //        }
-
-        //    }else if(translateResp.getStatus()==1001){
-        //        sendMessageToGroup(meetingId,new TextMessage("翻译方向不可用"));
-        //    }else if(translateResp.getStatus()==1002){
-        //        sendMessageToGroup(meetingId,new TextMessage("翻译失败"));
-        //    }else{
-        //        sendMessageToGroup(meetingId,new TextMessage("Someting wrong"));
-        //    }
-        //    userFlag.put(meetingId,true);
-        //}else{
-        //    //只写入
-        //    fileService.writeFile(meetingId,message.getPayload(),true,true);
-        //}
 
 
         // deletes the last line if new line the is immediate incremental (too complicated)
@@ -144,9 +108,11 @@ public class WebsocketHandler extends TextWebSocketHandler {
         String meetingId = (String) session.getAttributes().get("meetingId");
 
         ArrayList<WebSocketSession> users;
+        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
 
         if(!SessionManager.isContains(meetingId)){
-            RabbitmqService rabbitmqService = new RabbitmqService(meetingId);
+            Connection connection = rabbitMqUtils.getConnection();
+            RabbitmqService rabbitmqService = new RabbitmqService(meeting,translateService,connection);
             Thread thread = new Thread(rabbitmqService);
             threadMap.put(meetingId,thread);
             thread.start();

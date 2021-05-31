@@ -1,76 +1,98 @@
 package com.lyf.service;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.lyf.handler.SessionManager;
-import com.lyf.handler.WebsocketHandler;
-import com.lyf.utils.RabbitMqUtils;
+import com.lyf.pojo.Meeting;
+import com.lyf.pojo.Translate;
+import com.lyf.pojo.TranslateResp;
 import com.rabbitmq.client.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 public class RabbitmqService implements Runnable {
 
-    private String meetingId;
-
-    private int sentenceId;
 
 
-    public RabbitmqService(String meetingId) {
-        this.meetingId = meetingId;
+    private TranslateService translateService;
+    private final Meeting meeting;
+    private Connection connection;
+
+;
+
+    private int log_id = 0;
+    String his = "";
+    String lastSrc = "";
+
+    public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection) {
+        this.meeting = meeting;
+        this.translateService = translateService;
+        this.connection = connection;
     }
 
     @Override
     public void run() {
-        Connection connection = null;
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost("47.106.132.112");
-        factory.setPort(5672);
-        factory.setUsername("admin");
-        factory.setPassword("admin");
-        factory.setVirtualHost("/");
+
+        String meetingId = meeting.getMeetingId()+"";
+
         Channel channel = null;
-        try {
-            connection = factory.newConnection();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
-        }
         try {
             channel = connection.createChannel();
             while(!Thread.currentThread().isInterrupted()){
-                channel.basicConsume(meetingId, true, new DeliverCallback() {
-                    @Override
-                    public void handle(String s, Delivery delivery) throws IOException {
+                GetResponse getResponse = channel.basicGet(meetingId,true);
+                if(getResponse==null){
+                    Thread.sleep(2000);
+                }else{
+                    String message = new String(getResponse.getBody());
+                    System.out.println("来自消息队列的消息" + message);
+                    //sendMessageToGroup(meetingId,new TextMessage(message));
 
 
-                        String message = new String(delivery.getBody(),"UTF-8");
-                        System.out.println("来自消息队列的消息" + message);
+                    String extra_info = "";
+                    String tranRes = "";
+                    int lastLength = lastSrc.split(" ").length;
+                    //System.out.println("lastLength"+lastLength);
+                    int nowLength = message.split(" ").length;
+                    //System.out.println("nowLength"+nowLength);
+                    if(lastLength>nowLength && lastSrc.charAt(0)!=message.charAt(0)){
+                        log_id++;
+                        his = "";
+                    }
+                    Translate translate = new Translate(String.valueOf(log_id),meeting.getDirect(),0,message,his,extra_info);
 
-                        try {
-                            Thread.sleep(3000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                    TranslateResp translateResp = translateService.sendPost(translate);
+                    if(translateResp.getStatus()==0) {
+                        his = tranRes;
+                        lastSrc = translateResp.getSrc();
+                        //System.out.println("-------->"+lastSrc);
+                        if(translateResp.getTrans_act()==1){
+                            JSONObject res = new JSONObject();
+                            tranRes = translateResp.getTrans_res();
+                            res.put("src",translateResp.getSrc());
+                            res.put("tranRes",tranRes);
+                            sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
                         }
-                        sendMessageToGroup(meetingId,new TextMessage(message));
-                        //这里进行分发逻辑，也就是后来的向model发和接受逻辑
+
+                    }else if(translateResp.getStatus()==1001){
+                        sendMessageToGroup(meetingId,new TextMessage("翻译方向不可用"));
+                    }else if(translateResp.getStatus()==1002){
+                        sendMessageToGroup(meetingId,new TextMessage("翻译失败"));
+                    }else{
+                        sendMessageToGroup(meetingId,new TextMessage("Someting wrong"));
                     }
-                }, new CancelCallback() {
-                    @Override
-                    public void handle(String s) throws IOException {
-                        System.out.println("接收消息失败");
-                    }
-                });
+
+                }
+
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
             if (channel != null && channel.isOpen()) {
                 try {
                     channel.close();
@@ -88,11 +110,11 @@ public class RabbitmqService implements Runnable {
                 }
             }
         }
+
     }
 
 
     public void sendMessageToGroup(String meetingId,TextMessage message) {
-        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
 
         ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
         if (userList != null && userList.size() > 0) {

@@ -11,8 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+
 
 @Service
 public class TranslateService {
@@ -41,14 +40,16 @@ public class TranslateService {
 
     public TranslateResp sendPost(Translate translate){
 
-        //System.out.println("开始发送了");
+
         String strBody = restTemplate.postForEntity(
                 translateServerUrl,
                 generatePostJson(translate),
                 String.class
         ).getBody();
         TranslateResp translateResp = JSON.parseObject(strBody, TranslateResp.class);
-        //System.out.println(translateResp.toString());
+
+        System.out.println("http返回消息"+translateResp.toString());
+
         return translateResp;
     }
 }

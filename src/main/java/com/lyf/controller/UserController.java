@@ -3,10 +3,11 @@ package com.lyf.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lyf.pojo.Translate;
+import com.lyf.pojo.TranslateResp;
 import com.lyf.pojo.User;
+import com.lyf.service.TranslateService;
 import com.lyf.service.UserServiceimpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,6 +22,9 @@ public class UserController {
 
     @Autowired
     private UserServiceimpl userServiceimpl;
+
+    @Autowired
+    TranslateService translateService = new TranslateService();
 
     @ResponseBody
     @PostMapping("/login")
@@ -90,19 +94,38 @@ public class UserController {
     @PostMapping("/test")
     public String test(@RequestBody Translate translate){
         System.out.println(translate.toString());
-        return "123";
+
+        return "{\"log_id\":\"10\",\n" +
+                " \"status\":0,\n"+
+                " \"model_type\":0,\n" +
+                " \"src\":\"what are we doing\",\n" +
+                " \"trans_res\":\"你在干嘛啊\",\n" +
+                " \"trans_act\":1\"\"\n" +
+                "}";
     }
 
     @Autowired
     RestTemplate restTemplate;
 
+//    @ResponseBody
+//    @PostMapping("/testfortest")
+//    public String testfortest(@RequestBody Translate translate) {
+//        ResponseEntity<String> responseEntity = restTemplate.postForEntity("http://localhost:8080/test",
+//                translate, String.class);
+//        String body = responseEntity.getBody();
+//        return body;
+//
+//    }
+
     @ResponseBody
-    @PostMapping("/testfortest")
-    public String testfortest(@RequestBody Translate translate) {
-        ResponseEntity<String> responseEntity = restTemplate.postForEntity("http://localhost:8080/test",
-                translate, String.class);
-        String body = responseEntity.getBody();
-        return body;
+    @PostMapping("/t")
+    public String t() {
+        int log_id = 2;
+
+        Translate translate = new Translate(String.valueOf(log_id),2,0,"send","1","1");
+        TranslateResp translateResp = translateService.sendPost(translate);
+        return translateResp.toString();
 
     }
+
 }
