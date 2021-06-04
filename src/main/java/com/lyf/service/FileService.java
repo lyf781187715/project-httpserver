@@ -16,7 +16,7 @@ public class FileService {
         if(isSrc){
             url = filepath+"/"+meetingId+"_src";
         }else{
-            url = filepath+"/"+meetingId+"_is";
+            url = filepath+"/"+meetingId+"_his";
         }
 
         FileUtils.writeText(url,newMessage,isAppend);

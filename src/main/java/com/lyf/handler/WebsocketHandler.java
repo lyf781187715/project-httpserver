@@ -1,10 +1,8 @@
 package com.lyf.handler;
 
-import com.alibaba.fastjson.JSONObject;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lyf.pojo.Meeting;
-import com.lyf.pojo.Translate;
-import com.lyf.pojo.TranslateResp;
 import com.lyf.service.FileService;
 import com.lyf.service.MeetingServiceimpl;
 import com.lyf.service.RabbitmqService;
@@ -12,21 +10,17 @@ import com.lyf.service.TranslateService;
 import com.lyf.utils.RabbitMqUtils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import java.io.IOException;
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 
 @Component
 public class WebsocketHandler extends TextWebSocketHandler {
@@ -34,23 +28,21 @@ public class WebsocketHandler extends TextWebSocketHandler {
     //储存分组信息 meetingId：用户 list
     //private  Map<String, ArrayList<WebSocketSession>> userMap = new HashMap<>();
 
-    private Map<String,Thread> threadMap = new ConcurrentHashMap<>();
+    private static final Map<String,Thread> threadMap = new ConcurrentHashMap<>();
 
 
-    @Autowired
+    @Resource
     FileService fileService = new FileService();
 
-    @Autowired
+    @Resource
     TranslateService translateService = new TranslateService();
 
-    @Autowired
+    @Resource
     MeetingServiceimpl meetingServiceimpl;
 
-    @Autowired
+    @Resource
     RabbitMqUtils rabbitMqUtils;
 
-    @Value(value = "${filepath}")
-    private String filepath;
 
 
     //接受端信息，并发出
@@ -61,13 +53,24 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
         System.out.println("收到用户"+userId+"发来的消息");
 
-        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
+
+        //get message
+        String json = message.getPayload();
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, String> map = objectMapper.readValue(json, HashMap.class);
+        String text = map.get("text");
+        String type = map.get("type");
+        System.out.println(type+": " + text);
+
+        // implement write message to file for now
+        if (type.equals("2")) { // end of a sentence
+            fileService.writeFile(meetingId, text, true, true);
+        }
 
         //rabbitMQ part
-
         Connection connection = rabbitMqUtils.getConnection();
         Channel channel = connection.createChannel();
-        channel.basicPublish("",meetingId,null,message.getPayload().getBytes());
+        channel.basicPublish("",meetingId,null,text.getBytes());
 
 
         // deletes the last line if new line the is immediate incremental (too complicated)
@@ -86,17 +89,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         //    }
         //}
 
-//        String json = message.getPayload();
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        Map<String, String> map = objectMapper.readValue(json, HashMap.class);
-//        String text = map.get("text");
-//        String type = map.get("type");
-//        System.out.println(type+": " + text);
 
-        // implement write message to file for now
-//        if (type.equals("2")) { // end of a sentence
-//            fileService.writeFile(meetingId, text, true, true);
-//        }
 
         //sendMessageToGroup(meetingId,new TextMessage(text));
     }
@@ -107,8 +100,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         String userId = (String) session.getAttributes().get("userId");
         String meetingId = (String) session.getAttributes().get("meetingId");
 
-        ArrayList<WebSocketSession> users;
-        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
+        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.parseInt(meetingId));
 
         if(!SessionManager.isContains(meetingId)){
             Connection connection = rabbitMqUtils.getConnection();
@@ -144,7 +136,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         String meetingId = (String)session.getAttributes().get("meetingId");
 
 
-        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.valueOf(meetingId));
+        Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.parseInt(meetingId));
         if (String.valueOf(meeting.getUserId()).equals(userId) ){
             System.out.println("speaker has left");
             // implement broadcast speaker has left message
@@ -176,7 +168,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         if(session.isOpen()){
             session.close();
         }
-        String userId = (String)session.getAttributes().get("userId");
+        //String userId = (String)session.getAttributes().get("userId");
         String meetingId = (String)session.getAttributes().get("meetingId");
         //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
         ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
@@ -187,26 +179,4 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
     }
 
-//    public void sendMessageToGroup(String meetingId,TextMessage message){
-//        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
-//
-//        ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
-//        if(userList!=null&&userList.size()>0){
-//            for (WebSocketSession user:userList) {
-////                System.out.println(user.getAttributes().get("userName"));
-////                System.out.println(user.getAttributes().get("meetingId"));
-//                if(user.isOpen()){
-//                    try{
-//                        user.sendMessage(message);
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                        System.out.println("给用户"+user.getAttributes().get("userId")+"发送失败");
-//                    }
-//
-//                }
-//            }
-//        }
-//
-//
-//    }
 }
