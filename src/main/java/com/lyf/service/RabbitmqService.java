@@ -22,8 +22,6 @@ public class RabbitmqService implements Runnable {
     private final Meeting meeting;
     private Connection connection;
 
-;
-
     private int log_id = 0;
     String his = "";
     String lastSrc = "";
@@ -88,17 +86,13 @@ public class RabbitmqService implements Runnable {
                 }
 
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } finally {
             if (channel != null && channel.isOpen()) {
                 try {
                     channel.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (TimeoutException e) {
+                } catch (IOException | TimeoutException e) {
                     e.printStackTrace();
                 }
             }
