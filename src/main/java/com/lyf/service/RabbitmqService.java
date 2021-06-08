@@ -28,6 +28,7 @@ public class RabbitmqService implements Runnable {
     private int log_id = 0;
     String his = "";
     String lastSrc = "";
+    String status = "1";
 
     public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection) {
         this.meeting = meeting;
@@ -58,7 +59,6 @@ public class RabbitmqService implements Runnable {
 
                     //sendMessageToGroup(meetingId,new TextMessage(message));
 
-
                     String extra_info = "";
                     String tranRes = "";
                     int lastLength = lastSrc.split(" ").length;
@@ -75,6 +75,8 @@ public class RabbitmqService implements Runnable {
 
                     JSONObject res = new JSONObject();
                     res.put("seq",seq);
+                    status = String.valueOf(translateResp.getStatus());
+                    res.put("status",status);
                     if(translateResp.getStatus()==0) {
                         his = tranRes;
                         lastSrc = translateResp.getSrc();
@@ -109,6 +111,7 @@ public class RabbitmqService implements Runnable {
             e.printStackTrace();
         } catch (RuntimeException e){
             JSONObject res = new JSONObject();
+            res.put("status","500");
             res.put("tranRes","翻译服务器现在关闭状态");
             sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
         }
