@@ -70,7 +70,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         //rabbitMQ part
         Connection connection = rabbitMqUtils.getConnection();
         Channel channel = connection.createChannel();
-        channel.basicPublish("",meetingId,null,text.getBytes());
+        channel.basicPublish("",meetingId,null,json.getBytes());
 
 
         // deletes the last line if new line the is immediate incremental (too complicated)
@@ -89,9 +89,6 @@ public class WebsocketHandler extends TextWebSocketHandler {
         //    }
         //}
 
-
-
-        //sendMessageToGroup(meetingId,new TextMessage(text));
     }
 
     //建立连接后处理，离线消息推送
