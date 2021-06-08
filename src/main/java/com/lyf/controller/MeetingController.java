@@ -8,7 +8,7 @@ import com.lyf.service.FileService;
 import com.lyf.service.MeetingServiceimpl;
 import com.lyf.service.UserServiceimpl;
 import com.lyf.utils.RabbitMqUtils;
-import com.rabbitmq.client.Channel;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -59,7 +59,6 @@ public class MeetingController {
             Connection connection = rabbitMqUtils.getConnection();
             rabbitMqUtils.creatQueue(connection,meetingId+"");
 
-
             map.put("state",0);
             map.put("meetingId",meetingId);
         }catch (Exception e){
@@ -86,6 +85,9 @@ public class MeetingController {
             //meetingServiceimpl.deleteMeeting(meeting.getMeetingId()); // this will delete ended meeting from db
             map.put("state",0);
             map.put("meetingId",meeting.getMeetingId());
+
+            Connection connection = rabbitMqUtils.getConnection();
+            rabbitMqUtils.deleteQueue(connection,meetingId+"");
 
         }catch (Exception e){
             map.put("state",1);

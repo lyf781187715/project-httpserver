@@ -7,7 +7,9 @@ import com.lyf.handler.SessionManager;
 import com.lyf.pojo.Meeting;
 import com.lyf.pojo.Translate;
 import com.lyf.pojo.TranslateResp;
+import com.lyf.utils.RabbitMqUtils;
 import com.rabbitmq.client.*;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -116,6 +118,7 @@ public class RabbitmqService implements Runnable {
             sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
         }
         finally {
+            RabbitMqUtils.clearQueue(connection,meetingId+"");
             if (channel != null && channel.isOpen()) {
                 try {
                     channel.close();
@@ -130,6 +133,7 @@ public class RabbitmqService implements Runnable {
                     e.printStackTrace();
                 }
             }
+
         }
 
     }

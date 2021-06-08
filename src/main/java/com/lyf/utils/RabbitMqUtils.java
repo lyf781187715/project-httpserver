@@ -3,7 +3,9 @@ package com.lyf.utils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -23,7 +25,9 @@ public class RabbitMqUtils {
     @Value("${spring.rabbitmq.password}")
     private String passWord;
 
-    public  Connection getConnection(){
+
+
+    public Connection getConnection(){
 
         Connection connection = null;
         try {
@@ -43,11 +47,65 @@ public class RabbitMqUtils {
         return connection;
     }
 
-    public void creatQueue(Connection connection,String name) {
+    public static void creatQueue(Connection connection,String name) {
         Channel channel = null;
         try {
             channel = connection.createChannel();
             channel.queueDeclare(name, false, false, false, null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (channel != null && channel.isOpen()) {
+                try {
+                    channel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (TimeoutException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null && connection.isOpen()) {
+                try {
+                    connection.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void deleteQueue(Connection connection,String name) {
+        Channel channel = null;
+        try {
+            channel = connection.createChannel();
+            channel.queueDelete(name);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (channel != null && channel.isOpen()) {
+                try {
+                    channel.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (TimeoutException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (connection != null && connection.isOpen()) {
+                try {
+                    connection.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void clearQueue(Connection connection,String name) {
+        Channel channel = null;
+        try {
+            channel = connection.createChannel();
+            channel.queuePurge(name);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
