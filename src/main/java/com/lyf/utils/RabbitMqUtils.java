@@ -3,12 +3,12 @@ package com.lyf.utils;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 @Component
@@ -51,7 +51,9 @@ public class RabbitMqUtils {
         Channel channel = null;
         try {
             channel = connection.createChannel();
-            channel.queueDeclare(name, false, false, false, null);
+            Map<String,Object> args = new HashMap<String,Object>();
+            args.put("x-message-ttl",60*60*1000);
+            channel.queueDeclare(name, false, false, false, args);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

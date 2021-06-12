@@ -40,12 +40,12 @@ public class TranslateService {
 
     public TranslateResp sendPost(Translate translate){
 
+         String strBody = restTemplate.postForEntity(
+                    translateServerUrl,
+                    generatePostJson(translate),
+                    String.class
+            ).getBody();
 
-        String strBody = restTemplate.postForEntity(
-                translateServerUrl,
-                generatePostJson(translate),
-                String.class
-        ).getBody();
         TranslateResp translateResp = JSON.parseObject(strBody, TranslateResp.class);
 
         System.out.println("http返回消息"+translateResp.toString());

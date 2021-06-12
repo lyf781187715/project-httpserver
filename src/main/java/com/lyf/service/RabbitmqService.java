@@ -10,6 +10,8 @@ import com.lyf.pojo.TranslateResp;
 import com.lyf.utils.RabbitMqUtils;
 import com.rabbitmq.client.*;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -28,9 +30,9 @@ public class RabbitmqService implements Runnable {
     private Connection connection;
 
     private int log_id = 0;
-    String his = "";
-    String lastSrc = "";
-    String status = "1";
+    private String his = "";
+    private String lastSrc = "";
+    private String status = "1";
 
     public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection) {
         this.meeting = meeting;
@@ -40,27 +42,34 @@ public class RabbitmqService implements Runnable {
 
     @Override
     public void run() {
-
         String meetingId = meeting.getMeetingId()+"";
-
+        String type = "1";
         Channel channel = null;
         try {
             channel = connection.createChannel();
+
             while(!Thread.currentThread().isInterrupted()){
                 GetResponse getResponse = channel.basicGet(meetingId,true);
                 if(getResponse==null){
                     Thread.sleep(2000);
                 }else{
                     String json = new String(getResponse.getBody());
-                    System.out.println("来自消息队列的消息" + json);
                     ObjectMapper objectMapper = new ObjectMapper();
                     Map<String, String> map = objectMapper.readValue(json, HashMap.class);
+                    while(log_id!=0 && type == "1"){
+                        getResponse = channel.basicGet(meetingId,true);
+                        if(getResponse==null){
+                            break;
+                        }
+                        json = new String(getResponse.getBody());
+                        map = objectMapper.readValue(json, HashMap.class);
+                        type = map.get("type");
+                    }
+
                     String text = map.get("text");
-                    String seq = map.get("seq");
-                    //System.out.println(text);
-
+                    //String seq = map.get("seq");
+                    System.out.println("消息队列消息"+text);
                     //sendMessageToGroup(meetingId,new TextMessage(message));
-
                     String extra_info = "";
                     String tranRes = "";
                     int lastLength = lastSrc.split(" ").length;
@@ -73,10 +82,12 @@ public class RabbitmqService implements Runnable {
                     }
                     //Translate translate = new Translate(String.valueOf(log_id),meeting.getDirect(),4,message,his,extra_info);
                     Translate translate = new Translate(String.valueOf(log_id),1,4,text,his,extra_info);
+
                     TranslateResp translateResp = translateService.sendPost(translate);
 
+
                     JSONObject res = new JSONObject();
-                    res.put("seq",seq);
+                    res.put("seq",log_id);
                     status = String.valueOf(translateResp.getStatus());
                     res.put("status",status);
                     if(translateResp.getStatus()==0) {
@@ -109,9 +120,12 @@ public class RabbitmqService implements Runnable {
                 }
 
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-        } catch (RuntimeException e){
+        } catch (InterruptedException e) {
+            Thread.interrupted();
+        } catch (HttpClientErrorException e){
+            e.printStackTrace();
             JSONObject res = new JSONObject();
             res.put("status","500");
             res.put("tranRes","翻译服务器现在关闭状态");
