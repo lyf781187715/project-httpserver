@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 @Component
 public class WebsocketHandler extends TextWebSocketHandler {
@@ -43,6 +44,9 @@ public class WebsocketHandler extends TextWebSocketHandler {
     @Resource
     RabbitMqUtils rabbitMqUtils;
 
+    @Resource
+    Executor threadPool;
+
 
 
     //接受端信息，并发出
@@ -52,7 +56,6 @@ public class WebsocketHandler extends TextWebSocketHandler {
         String meetingId = (String) session.getAttributes().get("meetingId");
 
         System.out.println("收到用户"+userId+"发来的消息");
-
 
         //get message
         String json = message.getPayload();
@@ -66,6 +69,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         if (type.equals("2")) { // end of a sentence
             fileService.writeFile(meetingId, text, true, true);
         }
+
 
         //rabbitMQ part
         Connection connection = rabbitMqUtils.getConnection();
@@ -96,12 +100,12 @@ public class WebsocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
         String meetingId = (String) session.getAttributes().get("meetingId");
-
+        String modelType = (String) session.getAttributes().get("modelType");
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.parseInt(meetingId));
 
         if(!SessionManager.isContains(meetingId)){
             Connection connection = rabbitMqUtils.getConnection();
-            RabbitmqService rabbitmqService = new RabbitmqService(meeting,translateService,connection);
+            RabbitmqService rabbitmqService = new RabbitmqService(meeting,translateService,connection,modelType);
             Thread thread = new Thread(rabbitmqService);
             threadMap.put(meetingId,thread);
             thread.start();

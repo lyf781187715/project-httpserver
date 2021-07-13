@@ -2,10 +2,9 @@ package com.lyf.handler;
 
 
 import org.springframework.web.socket.WebSocketSession;
-
 import java.util.ArrayList;
-
 import java.util.concurrent.ConcurrentHashMap;
+
 
 public class SessionManager {
     private static ConcurrentHashMap<String, ArrayList<WebSocketSession>> userMap = new ConcurrentHashMap<>();

@@ -1,8 +1,5 @@
 package com.lyf.intercepter;
 
-import com.lyf.pojo.Meeting;
-import com.lyf.service.MeetingServiceimpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -22,10 +19,14 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse,
                                    WebSocketHandler webSocketHandler, Map<String, Object> attributes) throws Exception {
         ServletServerHttpRequest servletServerHttpRequest = (ServletServerHttpRequest) serverHttpRequest;
-        HttpSession session = servletServerHttpRequest.getServletRequest().getSession();
 
+        HttpSession session = servletServerHttpRequest.getServletRequest().getSession();
         String meetingId = servletServerHttpRequest.getServletRequest().getParameter("meetingId");
-        String userId= servletServerHttpRequest.getServletRequest().getParameter("userId");
+        String userId = servletServerHttpRequest.getServletRequest().getParameter("userId");
+
+
+        String modelType = servletServerHttpRequest.getServletRequest().getParameter("modelType");
+
 
 
 
@@ -36,6 +37,13 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
         if(userId != null){
             session.setAttribute("userId", userId);
             attributes.put("userId", userId);
+        }
+        if(modelType != null){
+            session.setAttribute("modelType", modelType);
+            attributes.put("modelType",modelType);
+        }else{
+            session.setAttribute("modelType", "4");
+            attributes.put("modelType","4");
         }
 
         //此处可以添加权限认证并return false
@@ -59,4 +67,6 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
 
         System.out.println("握手成功了！～！！！");
     }
+
+
 }

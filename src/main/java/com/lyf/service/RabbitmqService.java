@@ -9,9 +9,7 @@ import com.lyf.pojo.Translate;
 import com.lyf.pojo.TranslateResp;
 import com.lyf.utils.RabbitMqUtils;
 import com.rabbitmq.client.*;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -23,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 public class RabbitmqService implements Runnable {
 
+    String modelType = "4";
 
 
     private TranslateService translateService;
@@ -34,10 +33,11 @@ public class RabbitmqService implements Runnable {
     private String lastSrc = "";
     private String status = "1";
 
-    public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection) {
+    public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection,String modeltype) {
         this.meeting = meeting;
         this.translateService = translateService;
         this.connection = connection;
+        this.modelType = modeltype;
     }
 
     @Override
@@ -56,6 +56,7 @@ public class RabbitmqService implements Runnable {
                     String json = new String(getResponse.getBody());
                     ObjectMapper objectMapper = new ObjectMapper();
                     Map<String, String> map = objectMapper.readValue(json, HashMap.class);
+                    log_id = Integer.parseInt(map.get("seq"));
                     while(log_id!=0 && type == "1"){
                         getResponse = channel.basicGet(meetingId,true);
                         if(getResponse==null){
@@ -67,21 +68,22 @@ public class RabbitmqService implements Runnable {
                     }
 
                     String text = map.get("text");
-                    //String seq = map.get("seq");
                     System.out.println("消息队列消息"+text);
                     //sendMessageToGroup(meetingId,new TextMessage(message));
-                    String extra_info = "";
+                    String extra_info = "1";
                     String tranRes = "";
                     int lastLength = lastSrc.split(" ").length;
                     //System.out.println("lastLength"+lastLength);
                     int nowLength = text.split(" ").length;
                     //System.out.println("nowLength"+nowLength);
-                    if(lastLength>nowLength && lastSrc.charAt(0)!=text.charAt(0)){
+                    if(type == "2" || lastLength>nowLength && lastSrc.charAt(0)!=text.charAt(0)){
+                        if(type == "2"){
+                            extra_info = "0";
+                        }
                         log_id++;
                         his = "";
                     }
-                    //Translate translate = new Translate(String.valueOf(log_id),meeting.getDirect(),4,message,his,extra_info);
-                    Translate translate = new Translate(String.valueOf(log_id),1,4,text,his,extra_info);
+                    Translate translate = new Translate(String.valueOf(log_id),1,Integer.parseInt(modelType),text,his,extra_info);
 
                     TranslateResp translateResp = translateService.sendPost(translate);
 
@@ -104,13 +106,13 @@ public class RabbitmqService implements Runnable {
                         }
 
                     }
-//                    else if(translateResp.getStatus()==1001){
-//                        res.put("src",translateResp.getSrc());
-//                        sendMessageToGroup(meetingId,new TextMessage("翻译方向不可用"));
-//                    }else if(translateResp.getStatus()==1002){
-//                        res.put("src",translateResp.getSrc());
-//                        sendMessageToGroup(meetingId,new TextMessage("翻译失败"));
-//                   }
+                    else if(translateResp.getStatus()==1001){
+                        res.put("src",translateResp.getSrc());
+                        sendMessageToGroup(meetingId,new TextMessage("翻译方向不可用"));
+                    }else if(translateResp.getStatus()==1002){
+                        res.put("src",translateResp.getSrc());
+                        sendMessageToGroup(meetingId,new TextMessage("翻译失败"));
+                   }
                 else{
                         res.put("src","");
                         res.put("tranRes","Someting wrong");
