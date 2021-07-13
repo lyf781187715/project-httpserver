@@ -107,11 +107,13 @@ public class RabbitmqService implements Runnable {
 
                     }
                     else if(translateResp.getStatus()==1001){
-                        res.put("src",translateResp.getSrc());
-                        sendMessageToGroup(meetingId,new TextMessage("翻译方向不可用"));
+                        res.put("src","");
+                        res.put("tranRes","翻译方向不可用");
+                        sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
                     }else if(translateResp.getStatus()==1002){
-                        res.put("src",translateResp.getSrc());
-                        sendMessageToGroup(meetingId,new TextMessage("翻译失败"));
+                        res.put("src","");
+                        res.put("tranRes","翻译失败");
+                        sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
                    }
                 else{
                         res.put("src","");
