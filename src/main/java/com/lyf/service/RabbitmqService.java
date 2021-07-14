@@ -28,7 +28,7 @@ public class RabbitmqService implements Runnable {
     private final Meeting meeting;
     private Connection connection;
 
-    private int log_id = 0;
+    private int log_id = -1;
     private String his = "";
     private String lastSrc = "";
     private String status = "1";
@@ -44,6 +44,7 @@ public class RabbitmqService implements Runnable {
     public void run() {
         String meetingId = meeting.getMeetingId()+"";
         String type = "1";
+        int newLog_id = 0;
         Channel channel = null;
         try {
             channel = connection.createChannel();
@@ -56,19 +57,27 @@ public class RabbitmqService implements Runnable {
                     String json = new String(getResponse.getBody());
                     ObjectMapper objectMapper = new ObjectMapper();
                     Map<String, String> map = objectMapper.readValue(json, HashMap.class);
-                    log_id = Integer.parseInt(map.get("seq"));
-                    while(log_id!=0 && type == "1"){
+                    type = map.get("type");
+                    //System.out.println("------type:"+type);
+                    //System.out.println("first"+log_id);
+                    newLog_id = Integer.parseInt(map.get("seq"));
+                    while(type.equals("1") && newLog_id == log_id){
                         getResponse = channel.basicGet(meetingId,true);
+                        //System.out.println("进入逻辑");
+                        //System.out.println("second"+log_id);
                         if(getResponse==null){
                             break;
                         }
                         json = new String(getResponse.getBody());
                         map = objectMapper.readValue(json, HashMap.class);
+                        log_id = newLog_id;
+                        newLog_id = Integer.parseInt(map.get("seq"));
+                        System.out.println("third"+log_id);
                         type = map.get("type");
                     }
-
                     String text = map.get("text");
-                    System.out.println("消息队列消息"+text);
+                    log_id = Integer.parseInt(map.get("seq"));
+                    //System.out.println("消息队列消息"+text);
                     //sendMessageToGroup(meetingId,new TextMessage(message));
                     String extra_info = "1";
                     String tranRes = "";
@@ -76,11 +85,10 @@ public class RabbitmqService implements Runnable {
                     //System.out.println("lastLength"+lastLength);
                     int nowLength = text.split(" ").length;
                     //System.out.println("nowLength"+nowLength);
-                    if(type == "2" || lastLength>nowLength && lastSrc.charAt(0)!=text.charAt(0)){
-                        if(type == "2"){
+                    if(type.equals("2") || lastLength>nowLength && lastSrc.charAt(0)!=text.charAt(0)){
+                        if(type.equals("2")){
                             extra_info = "0";
                         }
-                        log_id++;
                         his = "";
                     }
                     Translate translate = new Translate(String.valueOf(log_id),1,Integer.parseInt(modelType),text,his,extra_info);

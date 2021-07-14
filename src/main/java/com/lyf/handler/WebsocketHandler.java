@@ -55,7 +55,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         String userId = (String) session.getAttributes().get("userId");
         String meetingId = (String) session.getAttributes().get("meetingId");
 
-        System.out.println("收到用户"+userId+"发来的消息");
+       // System.out.println("收到用户"+userId+"发来的消息");
 
         //get message
         String json = message.getPayload();
@@ -63,12 +63,12 @@ public class WebsocketHandler extends TextWebSocketHandler {
         Map<String, String> map = objectMapper.readValue(json, HashMap.class);
         String text = map.get("text");
         String type = map.get("type");
-        System.out.println(type+": " + text);
+        System.out.println("收到消息"+type+": " + text);
 
         // implement write message to file for now
-        if (type.equals("2")) { // end of a sentence
-            fileService.writeFile(meetingId, text, true, true);
-        }
+//        if (type.equals("2")) { // end of a sentence
+//            fileService.writeFile(meetingId, text, true, true);
+//        }
 
 
         //rabbitMQ part

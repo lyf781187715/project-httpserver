@@ -30,6 +30,7 @@ public class SessionManager {
     public static ArrayList<WebSocketSession> getList(String meetingId){
         return userMap.get(meetingId);
     }
+
     public static boolean isContains(String meetingId){
         return userMap.containsKey(meetingId);
     }
