@@ -21,7 +21,7 @@ import java.util.concurrent.TimeoutException;
 
 public class RabbitmqService implements Runnable {
 
-    String modelType = "4";
+    String modelType;
 
 
     private TranslateService translateService;
