@@ -52,7 +52,8 @@ public class RabbitmqService implements Runnable {
             while(!Thread.currentThread().isInterrupted()){
                 GetResponse getResponse = channel.basicGet(meetingId,true);
                 if(getResponse==null){
-                    Thread.sleep(2000);
+                    //Thread.sleep(2000);
+                    continue;
                 }else{
                     String json = new String(getResponse.getBody());
                     ObjectMapper objectMapper = new ObjectMapper();
@@ -116,13 +117,17 @@ public class RabbitmqService implements Runnable {
                     }
                     else if(translateResp.getStatus()==1001){
                         res.put("src","");
-                        res.put("tranRes","翻译方向不可用");
+                        res.put("tranRes","翻译模型不可用");
                         sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
                     }else if(translateResp.getStatus()==1002){
                         res.put("src","");
                         res.put("tranRes","翻译失败");
                         sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
-                   }
+                   }else if(translateResp.getStatus()==1000){
+                        res.put("src","");
+                        res.put("tranRes","翻译方向不可用");
+                        sendMessageToGroup(meetingId,new TextMessage(res.toJSONString()));
+                    }
                 else{
                         res.put("src","");
                         res.put("tranRes","Someting wrong");
@@ -134,8 +139,6 @@ public class RabbitmqService implements Runnable {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
-            Thread.interrupted();
         } catch (HttpClientErrorException e){
             e.printStackTrace();
             JSONObject res = new JSONObject();
