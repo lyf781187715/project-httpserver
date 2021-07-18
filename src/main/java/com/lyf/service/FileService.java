@@ -16,10 +16,20 @@ public class FileService {
         if(isSrc){
             url = filepath+"/"+meetingId+"_src";
         }else{
-            url = filepath+"/"+meetingId+"_his";
+            url = filepath+"/"+meetingId+"_is";
         }
 
         FileUtils.writeText(url,newMessage,isAppend);
+    }
+    public void removeLine(String meetingId,boolean isSrc){
+        String url=null;
+        if(isSrc){
+            url = filepath+"/"+meetingId+"_src";
+        }else{
+            url = filepath+"/"+meetingId+"_is";
+        }
+
+        FileUtils.removeText(url);
     }
     public String readFile(String meetingId,boolean isSrc){
         String url=null;
@@ -29,5 +39,15 @@ public class FileService {
             url = filepath+"/"+meetingId+"_his";
         }
         return FileUtils.readText(url);
+    }
+
+    public String readFileLast(String meetingId,boolean isSrc){
+        String url=null;
+        if(isSrc){
+            url = filepath+"/"+meetingId+"_src";
+        }else{
+            url = filepath+"/"+meetingId+"_his";
+        }
+        return FileUtils.readLastText(url);
     }
 }

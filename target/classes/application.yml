@@ -2,8 +2,8 @@ spring:
   datasource:
     username: root
     password: 119406lyf
-#    url: jdbc:mysql://47.106.132.112:3306/project?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT&nullCatalogMeansCurrent=true
-    url: jdbc:mysql://localhost:3306/project?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT&nullCatalogMeansCurrent=true
+    url: jdbc:mysql://47.106.132.112:3306/project?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT&nullCatalogMeansCurrent=true
+#    url: jdbc:mysql://localhost:3306/project?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT&nullCatalogMeansCurrent=true
 #    username: sql_user
 #    password: ViWiJsHo
 #    url: jdbc:mysql://34.96.147.148:3306/project?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT&nullCatalogMeansCurrent=true
