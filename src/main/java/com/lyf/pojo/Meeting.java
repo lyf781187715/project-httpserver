@@ -16,8 +16,10 @@ public class Meeting {
     int userId;
     int direct;
     int status;
+    int modelType;
 
-    public Meeting(int meetingId, String pwd, String roomTitle, String userName, String roomDescription, int userId, int direct, String imageUrl, int status) {
+    public Meeting(int meetingId, String pwd, String roomTitle, String userName, String roomDescription,
+                   int userId, int direct, String imageUrl, int status,int modelType) {
         this.meetingId = meetingId;
         this.pwd = pwd;
         this.roomTitle = roomTitle;
@@ -27,6 +29,7 @@ public class Meeting {
         this.direct = direct;
         this.imageUrl = imageUrl;
         this.status = status;
+        this.modelType = modelType;
     }
 
     public void setMeetingStatus(int i) {

@@ -23,7 +23,6 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
         HttpSession session = servletServerHttpRequest.getServletRequest().getSession();
         String meetingId = servletServerHttpRequest.getServletRequest().getParameter("meetingId");
         String userId = servletServerHttpRequest.getServletRequest().getParameter("userId");
-        String modelType = servletServerHttpRequest.getServletRequest().getParameter("modelType");
 
 
 
@@ -36,14 +35,6 @@ public class MyHandshakeInterceptor implements HandshakeInterceptor {
             session.setAttribute("userId", userId);
             attributes.put("userId", userId);
         }
-        if(modelType != null){
-            session.setAttribute("modelType", modelType);
-            attributes.put("modelType",modelType);
-        }else{
-            session.setAttribute("modelType", "2");
-            attributes.put("modelType","2");
-        }
-
         //此处可以添加权限认证并return false
 //        if(session!=null){
 //            String userName = (String) session.getAttribute("userName");

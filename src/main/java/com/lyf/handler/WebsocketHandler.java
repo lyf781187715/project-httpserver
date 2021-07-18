@@ -66,9 +66,9 @@ public class WebsocketHandler extends TextWebSocketHandler {
         System.out.println("收到消息"+type+": " + text);
 
         // implement write message to file for now
-//        if (type.equals("2")) { // end of a sentence
-//            fileService.writeFile(meetingId, text, true, true);
-//        }
+        if (type.equals("2")) { // end of a sentence
+            fileService.writeFile(meetingId, text, true, true);
+        }
 
 
         //rabbitMQ part
@@ -100,12 +100,11 @@ public class WebsocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String userId = (String) session.getAttributes().get("userId");
         String meetingId = (String) session.getAttributes().get("meetingId");
-        String modelType = (String) session.getAttributes().get("modelType");
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.parseInt(meetingId));
 
         if(!SessionManager.isContains(meetingId)){
             Connection connection = rabbitMqUtils.getConnection();
-            RabbitmqService rabbitmqService = new RabbitmqService(meeting,translateService,connection,modelType);
+            RabbitmqService rabbitmqService = new RabbitmqService(meeting,translateService,connection);
             Thread thread = new Thread(rabbitmqService);
             threadMap.put(meetingId,thread);
             thread.start();
@@ -140,8 +139,6 @@ public class WebsocketHandler extends TextWebSocketHandler {
         Meeting meeting = meetingServiceimpl.queryMeetingById(Integer.parseInt(meetingId));
         if (String.valueOf(meeting.getUserId()).equals(userId) ){
             System.out.println("speaker has left");
-            // implement broadcast speaker has left message
-            //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
             ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
             for (WebSocketSession session1 : userList){
                 if (session1.isOpen()) {
@@ -169,9 +166,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
         if(session.isOpen()){
             session.close();
         }
-        //String userId = (String)session.getAttributes().get("userId");
         String meetingId = (String)session.getAttributes().get("meetingId");
-        //ArrayList<WebSocketSession> userList = userMap.get(meetingId);
         ArrayList<WebSocketSession> userList = SessionManager.getList(meetingId);
         // todo: check logic of userList being null
         if (userList != null) {

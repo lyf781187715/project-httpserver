@@ -52,7 +52,9 @@ public class MeetingController {
             int meetingId = meetingServiceimpl.creatNewId();
             Meeting meeting1 = new Meeting(meetingId,
                     meeting.getPwd(),meeting.getRoomTitle(),meeting.getUserName(),
-                    meeting.getRoomDescription(),user.getUserId(),meeting.getDirect(), meeting.getImageUrl(), 1);
+                    meeting.getRoomDescription(),user.getUserId(),meeting.getDirect(), meeting.getImageUrl(),
+                    1,
+                    meeting.getModelType());
             // start meeting default set status to 1
             meetingServiceimpl.addMeeting(meeting1);
 
@@ -115,6 +117,7 @@ public class MeetingController {
             eachMeet.put("direct", meeting.getDirect());
             eachMeet.put("imageUrl", meeting.getImageUrl());
             eachMeet.put("status", meeting.getStatus());
+            eachMeet.put("modelType", meeting.getModelType());
             if(meeting.getPwd()!=null){
                 eachMeet.put("pwd",meeting.getPwd());
             }

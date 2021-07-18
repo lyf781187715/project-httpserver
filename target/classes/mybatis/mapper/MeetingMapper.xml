@@ -18,8 +18,8 @@
     </select>
 
     <insert id="addMeeting" parameterType="Meeting">
-        insert into meeting(meetingId,pwd,roomTitle,userName,roomDescription,userId,direct,imageUrl, status)
-        values(#{meetingId},#{pwd},#{roomTitle},#{userName},#{roomDescription},#{userId},#{direct},#{imageUrl}, #{status})
+        insert into meeting(meetingId,pwd,roomTitle,userName,roomDescription,userId,direct,imageUrl, status, modelType)
+        values(#{meetingId},#{pwd},#{roomTitle},#{userName},#{roomDescription},#{userId},#{direct},#{imageUrl}, #{status},#{modelType})
     </insert>
 
     <insert id="updateMeeting" parameterType="Meeting">

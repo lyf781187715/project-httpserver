@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 
 public class RabbitmqService implements Runnable {
 
-    String modelType;
 
 
     private TranslateService translateService;
@@ -33,16 +32,16 @@ public class RabbitmqService implements Runnable {
     private String lastSrc = "";
     private String status = "1";
 
-    public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection,String modeltype) {
+    public RabbitmqService(Meeting meeting,TranslateService translateService,Connection connection) {
         this.meeting = meeting;
         this.translateService = translateService;
         this.connection = connection;
-        this.modelType = modeltype;
     }
 
     @Override
     public void run() {
         String meetingId = meeting.getMeetingId()+"";
+        int modelType = meeting.getModelType();
         String type = "1";
         int newLog_id = 0;
         Channel channel = null;
@@ -92,7 +91,7 @@ public class RabbitmqService implements Runnable {
                         }
                         his = "";
                     }
-                    Translate translate = new Translate(String.valueOf(log_id),1,Integer.parseInt(modelType),text,his,extra_info);
+                    Translate translate = new Translate(String.valueOf(log_id),1,modelType,text,his,extra_info);
 
                     TranslateResp translateResp = translateService.sendPost(translate);
 
