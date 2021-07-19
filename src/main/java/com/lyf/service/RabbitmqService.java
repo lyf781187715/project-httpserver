@@ -96,6 +96,7 @@ public class RabbitmqService implements Runnable {
                     TranslateResp translateResp = translateService.sendPost(translate);
 
 
+
                     JSONObject res = new JSONObject();
                     res.put("seq",String.valueOf(log_id));
                     status = String.valueOf(translateResp.getStatus());

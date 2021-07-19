@@ -124,8 +124,14 @@ public class WebsocketHandler extends TextWebSocketHandler {
 //
 //        users.add(session);
 //        userMap.put(meetingId, users);
-        session.sendMessage(new TextMessage(userId+"加入会议"+meetingId));
-        System.out.println("sent enter msg");
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("state","2");
+
+        String str = mapper.writeValueAsString(map);
+        session.sendMessage(new TextMessage(str));
+        System.out.println("sent enter msg" +" "+userId+"加入会议"+meetingId);
     }
 
 
@@ -143,7 +149,14 @@ public class WebsocketHandler extends TextWebSocketHandler {
             for (WebSocketSession session1 : userList){
                 if (session1.isOpen()) {
                     System.out.println(session1.getUri());
-                    session1.sendMessage(new TextMessage("001SYSTEM MESSAGE: SPEAKER HAS LEFT"));
+
+                    ObjectMapper mapper = new ObjectMapper();
+                    Map<String, Object> map = new HashMap<String, Object>();
+                    map.put("state","1");
+                    String str = mapper.writeValueAsString(map);
+                    session1.sendMessage(new TextMessage(str));
+
+
                 }
             }
         }
