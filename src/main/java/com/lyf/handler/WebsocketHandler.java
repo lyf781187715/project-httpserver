@@ -127,7 +127,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("state","2");
+        map.put("status","2");
 
         String str = mapper.writeValueAsString(map);
         session.sendMessage(new TextMessage(str));
@@ -152,7 +152,7 @@ public class WebsocketHandler extends TextWebSocketHandler {
 
                     ObjectMapper mapper = new ObjectMapper();
                     Map<String, Object> map = new HashMap<String, Object>();
-                    map.put("state","1");
+                    map.put("status","1");
                     String str = mapper.writeValueAsString(map);
                     session1.sendMessage(new TextMessage(str));
 
