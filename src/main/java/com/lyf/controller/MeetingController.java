@@ -88,8 +88,6 @@ public class MeetingController {
             map.put("state",0);
             map.put("meetingId",meeting.getMeetingId());
 
-            Connection connection = rabbitMqUtils.getConnection();
-            rabbitMqUtils.deleteQueue(connection,meetingId+"");
 
         }catch (Exception e){
             map.put("state",1);

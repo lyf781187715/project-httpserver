@@ -90,22 +90,22 @@ public class UserController {
 
     }
 
-    @ResponseBody
-    @PostMapping("/test")
-    public String test(@RequestBody Translate translate){
-        System.out.println(translate.toString());
-
-        return "{\"log_id\":\"10\",\n" +
-                " \"status\":0,\n"+
-                " \"model_type\":0,\n" +
-                " \"src\":\"what are we doing\",\n" +
-                " \"trans_res\":\"你在干嘛啊\",\n" +
-                " \"trans_act\":1\"\"\n" +
-                "}";
-    }
-
-    @Autowired
-    RestTemplate restTemplate;
+//    @ResponseBody
+//    @PostMapping("/test")
+//    public String test(@RequestBody Translate translate){
+//        System.out.println(translate.toString());
+//
+//        return "{\"log_id\":\"10\",\n" +
+//                " \"status\":0,\n"+
+//                " \"model_type\":0,\n" +
+//                " \"src\":\"what are we doing\",\n" +
+//                " \"trans_res\":\"你在干嘛啊\",\n" +
+//                " \"trans_act\":1\"\"\n" +
+//                "}";
+//    }
+//
+//    @Autowired
+//    RestTemplate restTemplate;
 
 //    @ResponseBody
 //    @PostMapping("/testfortest")
@@ -117,15 +117,15 @@ public class UserController {
 //
 //    }
 
-    @ResponseBody
-    @PostMapping("/t")
-    public String t() {
-        int log_id = 2;
-
-        Translate translate = new Translate(String.valueOf(log_id),2,0,"send","1","1");
-        TranslateResp translateResp = translateService.sendPost(translate);
-        return translateResp.toString();
-
-    }
+//    @ResponseBody
+//    @PostMapping("/t")
+//    public String t() {
+//        int log_id = 2;
+//
+//        Translate translate = new Translate(String.valueOf(log_id),2,0,"send","1","1");
+//        TranslateResp translateResp = translateService.sendPost(translate);
+//        return translateResp.toString();
+//
+//    }
 
 }

@@ -93,9 +93,8 @@ public class RabbitmqService implements Runnable {
                     }
                     Translate translate = new Translate(String.valueOf(log_id),1,modelType,text,his,extra_info);
 
+
                     TranslateResp translateResp = translateService.sendPost(translate);
-
-
 
                     JSONObject res = new JSONObject();
                     res.put("seq",String.valueOf(log_id));
@@ -104,7 +103,6 @@ public class RabbitmqService implements Runnable {
                     if(translateResp.getStatus()==0) {
                         his = tranRes;
                         lastSrc = translateResp.getSrc();
-                        //System.out.println("-------->"+lastSrc);
                         if(translateResp.getTrans_act()==1){
                             //JSONObject res = new JSONObject();
                             tranRes = translateResp.getTrans_res();
